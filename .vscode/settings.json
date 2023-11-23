@@ -1,0 +1,10 @@
+{
+  "cSpell.words": [
+    "octo",
+    "octocrab"
+  ],
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"],
+  "rust-analyzer.cargo.autoreload": true,
+  "rust-analyzer.showDependenciesExplorer": true,
+  "rust-analyzer.lens.enable": true,
+}

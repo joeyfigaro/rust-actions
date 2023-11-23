@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "tamasfe.even-better-toml",
+    "1YiB.rust-bundle",
+    "rust-lang.rust-analyzer",
+    "dustypomerleau.rust-syntax"
+  ]
+}
