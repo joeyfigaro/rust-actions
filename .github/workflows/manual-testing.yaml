@@ -1,0 +1,69 @@
+name: Manual Testing
+
+on:
+  workflow_dispatch
+
+jobs:
+  conflictMarkers:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build
+        run: caro build --release
+
+      - name: Get Cargo Metadata
+        id: cargo
+        shell: bash
+        run: >-
+          echo -n "name=version::" >> $GITHUB_OUTPUT &&
+          cargo metadata --format-version=1 --no-deps |
+          jq -r '.packages[-1].version' &&
+          echo -n "name=name::" >> $GITHUB_OUTPUT &&
+          cargo metadata --format-version=1 --no-deps |
+          jq -r '.packages[-1].name'
+
+      - name: Check if tag is released
+        id: tag
+        shell: bash
+        env:
+          TAG: ${{ steps.cargo.outputs.version }}
+        run: >-
+          git fetch --depth=1 origin "+refs/tags/${TAG}" > /dev/null 2>&1 &&
+          echo "name=exists::true" >> $GITHUB_OUTPUT ||
+          echo "name=exists::false" >> $GITHUB_OUTPUT
+
+      - name: Bundle Release Asset
+        id: asset
+        shell: bash
+        env:
+          NAME: ${{ steps.cargo.outputs.name }}
+          VERSION: ${{ steps.cargo.outputs.version }}
+          OS: ${{ matrix.os }}
+        run: >-
+          export ARCH="linux" &&
+          if [ "$OS" = "macos-latest" ]; then export ARCH="darwin"; fi &&
+          if [ "$OS" = "windows-latest" ]; then export ARCH="win32"; fi &&
+          export ASSET_NAME="${NAME}-v${VERSION}-${ARCH}-x64.tar.gz" &&
+          export ASSET_PATH="${RUNNER_TEMP}/${ASSET_NAME}" &&
+          if [ "$OS" = "windows-latest" ]; then export NAME="${NAME}.exe"; fi &&
+          export BINARY="./target/release/${NAME}" &&
+          if [ "$OS" != "windows-latest" ]; then strip "$BINARY"; fi &&
+          if [ "$OS" != "windows-latest" ]; then tar -czf "$ASSET_PATH" -C "./target/release" "$NAME"; fi &&
+          if [ "$OS" = "windows-latest" ]; then tar --force-local -czf "$ASSET_PATH" -C "./target/release" "$NAME"; fi &&
+          echo -n "name=path::" >> $GITHUB_OUTPUT &&
+          echo "$ASSET_PATH"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: steps.tag.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.cargo.outputs.version }}
+          files: ${{ steps.asset.outputs.path }}
