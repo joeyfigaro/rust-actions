@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Build
-        run: caro build --release
+        run: cargo build --release
 
       - name: Get Cargo Metadata
         id: cargo
