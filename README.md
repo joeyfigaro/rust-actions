@@ -1,5 +1,7 @@
 # Github Actions (Rust)
 
+[![Manual Testing](https://github.com/joeyfigaro/rust-actions/actions/workflows/manual-testing.yaml/badge.svg?branch=main&event=workflow_dispatch)](https://github.com/joeyfigaro/rust-actions/actions/workflows/manual-testing.yaml)
+
 This repository contains several different, but related pieces. It includes
 a set of crates for building Github Actions in Rust, a set of Github Actions
 built in Rust and an example of CI and Javascript bootstrapping for executing
