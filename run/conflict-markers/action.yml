@@ -1,0 +1,11 @@
+name: '@joeyfigaro/actions/run/conflict-markers'
+description: Finds conflict markers in file content
+author: Joey Figaro
+inputs:
+  files:
+    required: true
+    description: Files to check
+    default: '*.*'
+runs:
+  using: node20
+  main: index.js
