@@ -4,11 +4,13 @@ permissions:
   actions: read
   contents: write
 
+
 on:
   workflow_dispatch
 
 jobs:
-  conflictMarkers:
+  build-rust-binaries:
+    name: Build Rust Binaries
     strategy:
       matrix:
         os:
