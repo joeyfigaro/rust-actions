@@ -65,7 +65,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: steps.tag.outputs.exists == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           tag_name: v${{ steps.cargo.outputs.version }}
           files: ${{ steps.asset.outputs.path }}
