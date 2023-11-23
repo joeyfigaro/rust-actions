@@ -1,5 +1,11 @@
 name: Manual Testing
 
+permissions:
+  actions:
+    read
+  contents:
+    read
+
 on:
   workflow_dispatch
 
@@ -21,8 +27,8 @@ jobs:
         id: cargo
         shell: bash
         run: >-
-          echo -n "version=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[-1].version')" >> $GITHUB_OUTPUT &&
-          echo -n "name=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[-1].name')" >> $GITHUB_OUTPUT
+          echo "version=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[-1].version')" >> $GITHUB_OUTPUT &&
+          echo "name=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[-1].name')" >> $GITHUB_OUTPUT
 
       - name: Check if tag is released
         id: tag
@@ -31,8 +37,8 @@ jobs:
           TAG: ${{ steps.cargo.outputs.version }}
         run: >-
           git fetch --depth=1 origin "+refs/tags/${TAG}" > /dev/null 2>&1 &&
-          echo "name=exists::true" >> $GITHUB_OUTPUT ||
-          echo "name=exists::false" >> $GITHUB_OUTPUT
+          echo "exists=true" >> $GITHUB_OUTPUT ||
+          echo "exists=false" >> $GITHUB_OUTPUT
 
       - name: Bundle Release Asset
         id: asset
@@ -52,7 +58,7 @@ jobs:
           if [ "$OS" != "windows-latest" ]; then strip "$BINARY"; fi &&
           if [ "$OS" != "windows-latest" ]; then tar -czf "$ASSET_PATH" -C "./target/release" "$NAME"; fi &&
           if [ "$OS" = "windows-latest" ]; then tar --force-local -czf "$ASSET_PATH" -C "./target/release" "$NAME"; fi &&
-          echo -n "name=path::" >> $GITHUB_OUTPUT &&
+          echo "path=$ASSET_PATH" >> $GITHUB_OUTPUT &&
           echo "$ASSET_PATH"
 
       - name: Create Release
