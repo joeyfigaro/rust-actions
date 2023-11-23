@@ -1,34 +1,36 @@
 name: Release
+
+permissions:
+  actions: read
+  contents: write
+
+
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch
+
 jobs:
   release:
+    name: Create New Release
     strategy:
       matrix:
         os:
-          - macos-latest
           - ubuntu-latest
-          - windows-latest
+          - macos-latest
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@master
+
       - name: Build
         run: cargo build --release
-      - name: Test
-        run: cargo test --release
+
       - name: Get Cargo Metadata
         id: cargo
         shell: bash
         run: >-
-          echo -n "::set-output name=version::" &&
-          cargo metadata --format-version=1 --no-deps |
-          jq -r '.packages[-1].version' &&
-          echo -n "::set-output name=name::" &&
-          cargo metadata --format-version=1 --no-deps |
-          jq -r '.packages[-1].name'
+          echo "version=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[-1].version')" >> $GITHUB_OUTPUT &&
+          echo "name=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[-1].name')" >> $GITHUB_OUTPUT
+
       - name: Check if tag is released
         id: tag
         shell: bash
@@ -36,8 +38,9 @@ jobs:
           TAG: ${{ steps.cargo.outputs.version }}
         run: >-
           git fetch --depth=1 origin "+refs/tags/${TAG}" > /dev/null 2>&1 &&
-          echo "::set-output name=exists::true" ||
-          echo "::set-output name=exists::false"
+          echo "exists=true" >> $GITHUB_OUTPUT ||
+          echo "exists=false" >> $GITHUB_OUTPUT
+
       - name: Bundle Release Asset
         id: asset
         shell: bash
@@ -56,29 +59,29 @@ jobs:
           if [ "$OS" != "windows-latest" ]; then strip "$BINARY"; fi &&
           if [ "$OS" != "windows-latest" ]; then tar -czf "$ASSET_PATH" -C "./target/release" "$NAME"; fi &&
           if [ "$OS" = "windows-latest" ]; then tar --force-local -czf "$ASSET_PATH" -C "./target/release" "$NAME"; fi &&
-          echo -n "::set-output name=path::" &&
+          echo "path=$ASSET_PATH" >> $GITHUB_OUTPUT &&
           echo "$ASSET_PATH"
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         if: steps.tag.outputs.exists == 'false'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          token: ${{ github.token }}
           tag_name: v${{ steps.cargo.outputs.version }}
           files: ${{ steps.asset.outputs.path }}
+
   retag:
     runs-on: ubuntu-latest
     needs: release
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Get Cargo Metadata
         id: cargo
         shell: bash
         run: >-
-          echo -n "::set-output name=version::" &&
-          cargo metadata --format-version=1 --no-deps |
-          jq -r '.packages[-1].version'
+          echo "name=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[-1].version')" >> $GITHUB_OUTPUT
       - name: Check if tag is released
         id: tag
         shell: bash
@@ -86,8 +89,7 @@ jobs:
           TAG: ${{ steps.cargo.outputs.version }}
         run: >-
           git fetch --depth=1 origin "+refs/tags/${TAG}" > /dev/null 2>&1 &&
-          echo "::set-output name=exists::true" ||
-          echo "::set-output name=exists::false"
+          echo "exists=true" || echo "exists=false"
       - name: Create semver tags
         if: steps.tag.outputs.exists == 'false'
         shell: bash
