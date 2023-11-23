@@ -1,10 +1,8 @@
 name: Manual Testing
 
 permissions:
-  actions:
-    read
-  contents:
-    read
+  actions: read
+  contents: write
 
 on:
   workflow_dispatch
@@ -15,6 +13,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - macos-latest
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
